@@ -1,0 +1,8 @@
+q
+q p
+p l m
+l a b
+p a l
+m l b
+a
+b
