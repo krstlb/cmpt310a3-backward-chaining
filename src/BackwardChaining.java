@@ -1,7 +1,6 @@
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Scanner;
 
 public class BackwardChaining {
@@ -9,25 +8,28 @@ public class BackwardChaining {
     private static ArrayList<String> goals;
     private static ArrayList<String> facts;
     private static ArrayList<String> clauses;
-    private static ArrayList<String> entailed;
+    private static ArrayList<String> visited;
 
     public static void main(String[] args) {
         String output = "";
 
-        init(args[0]);
+        try {
+            init(args[0]);
+        } catch (ArrayIndexOutOfBoundsException e) {
+            System.out.println("Usage: java BackwardChaining <filename>");
+            System.exit(0);
+        }
 
         System.out.println();
+        System.out.println("BACKWARD CHAINING DIAGNOSTICS:");
         System.out.println("First query: " + query);
-        System.out.println();
-
-        System.out.println("Starting backward chaining...");
 
         if (backwardChaining()) {
             output +=  query + " is TRUE\n";
-            output +=  "order of entailment:\n";
+            output +=  "\norder of entailment: ";
             // append the entailed symbols in reverse to output
-            for (int i = entailed.size() - 1; i >= 0; i--) {
-                output += entailed.get(i);
+            for (int i = visited.size() - 1; i >= 0; i--) {
+                output += visited.get(i);
                 if (i != 0) {
                     output += ", ";
                 }
@@ -36,6 +38,8 @@ public class BackwardChaining {
             output += query + " is FALSE\n";
         }
 
+        System.out.println();
+        System.out.println("RESULT:");
         System.out.println(output);
     }
 
@@ -52,7 +56,7 @@ public class BackwardChaining {
         goals = new ArrayList<String>();
         facts = new ArrayList<String>();
         clauses = new ArrayList<String>();
-        entailed = new ArrayList<String>();
+        visited = new ArrayList<String>();
 
         try {
             File file = new File(filename);
@@ -66,7 +70,6 @@ public class BackwardChaining {
             // go to next line (start of rules)
             scan.nextLine();
 
-            System.out.println("Reading input...");
             System.out.println();
             System.out.println("RULES:");
             // get rules
@@ -75,8 +78,6 @@ public class BackwardChaining {
                 numLines++;
                 String line = scan.nextLine();
                 String[] atoms = line.split(" ");
-                //System.out.println(line);
-                //System.out.println(Arrays.toString(atoms));
 
                 if (atoms.length == 1) {
                     System.out.println("fact: " + atoms[0] + " is TRUE");
@@ -95,16 +96,13 @@ public class BackwardChaining {
         } catch (FileNotFoundException e1) {
             System.out.println("Unable to find file: " + filename);
             System.exit(0);
-        } catch (ArrayIndexOutOfBoundsException e2) {
-            System.out.println("Usage: java BackwardChaining <filename>");
-            System.exit(0);
         }
     }
 
     /**
      * Works backwards from query q. Tries to prove q by checking if q is known or, proves recursively by BC
      * all the premises of some rule concluding q.
-     * It avoid loops by checking if new suboal is already in the set of goals. It avoids repeating work by
+     * It avoid loops by checking if new subgoal is already in the set of goals. It avoids repeating work by
      * checking if the new subgoal has already been proven true, or has already failed.
      * @return
      */
@@ -117,7 +115,7 @@ public class BackwardChaining {
 
             System.out.println("Evaluating " + q + "...");
             // Add the entailment to keep track of processed predicates
-            entailed.add(q);
+            visited.add(q);
 
             // If this predicate is not already a proven fact, we process it
             if (!facts.contains(q)) {
@@ -140,13 +138,14 @@ public class BackwardChaining {
                 // Since no predicates were found to process, and the query is not a fact,
                 // we cannot prove this query
                 if (predicatesToBeProcessed.size() == 0) {
+                    System.out.println("Unable to prove " + q);
                     return false;
                 }
                 // There are predicates to process. If they are not already entailed,
                 // add them to the list of goals
                 else {
                     for (int i = 0; i < predicatesToBeProcessed.size(); i++) {
-                        if (!entailed.contains(predicatesToBeProcessed.get(i)) &&
+                        if (!visited.contains(predicatesToBeProcessed.get(i)) &&
                                 !goals.contains(predicatesToBeProcessed.get(i))) {
                             goals.add(predicatesToBeProcessed.get(i));
                         }
@@ -155,7 +154,7 @@ public class BackwardChaining {
             } else {
                 System.out.println(q + " evaluated to be TRUE");
             }
-            System.out.println("Visited: " + entailed);
+            System.out.println("Visited: " + visited);
         }
         return true;
     }
@@ -170,6 +169,4 @@ public class BackwardChaining {
         String conclusion = c.split(" ")[0];
         return conclusion.equals(q);
     }
-
-
 }
