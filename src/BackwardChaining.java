@@ -1,14 +1,15 @@
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
+import java.util.NoSuchElementException;
 import java.util.Scanner;
 
 public class BackwardChaining {
     private static String query;
     private static ArrayList<String> goals;
-    private static ArrayList<String> facts;
-    private static ArrayList<String> clauses;
+    private static ArrayList<String> knowledgeBase;
     private static ArrayList<String> visited;
+    private static ArrayList<String> truthTable;
 
     public static void main(String[] args) {
         String output = "";
@@ -35,6 +36,7 @@ public class BackwardChaining {
                 }
             }
         } else {
+            output += query + " could not be proven in the knowledge base.\n";
             output += query + " is FALSE\n";
         }
 
@@ -45,18 +47,17 @@ public class BackwardChaining {
 
     /**
      * Reads the rules file indicated by the user in command prompt, then sets up the initial values for
-     * backward chaining. It does this by splitting the file into rules. It will add the rule to either a
-     * set of facts (e.g. "p") or clauses (e.g. "q p" or "r p q"), depending on the rule. It also gets the
-     * query to start the backward chaining with. If the file cannot be found, the rule file contains invalid
-     * syntax, or the user enters incorrect execution arguments, an error will be printed and the program
-     * will exit.
+     * backward chaining. It does this by splitting the file into rules. It will add the rule to a list,
+     * knowledgeBase. It also gets the query to start the backward chaining with. If the file cannot be
+     * found, the rule file contains invalid * syntax, or the user enters incorrect execution arguments,
+     * an error will be printed and the program will exit.
      * @param filename file to read rules from
      */
     private static void init(String filename) {
         goals = new ArrayList<String>();
-        facts = new ArrayList<String>();
-        clauses = new ArrayList<String>();
+        knowledgeBase = new ArrayList<String>();
         visited = new ArrayList<String>();
+        truthTable = new ArrayList<String>();
 
         try {
             File file = new File(filename);
@@ -70,7 +71,6 @@ public class BackwardChaining {
             // go to next line (start of rules)
             scan.nextLine();
 
-            System.out.println();
             System.out.println("RULES:");
             // get rules
             int numLines = 1;
@@ -81,20 +81,21 @@ public class BackwardChaining {
 
                 if (atoms.length == 1) {
                     System.out.println("fact: " + atoms[0] + " is TRUE");
-                    facts.add(line);
                 } else if (atoms.length == 2) {
                     System.out.println("implication: IF " + atoms[1] + " THEN " + atoms[0]);
-                    clauses.add(line);
                 } else if (atoms.length == 3) {
                     System.out.println("conjunction: IF " + atoms[1] + " AND " + atoms[2] + " THEN " + atoms[0]);
-                    clauses.add(line);
                 } else {
-                    System.out.println("Invalid input at line " + numLines + ", please check syntax in rules file");
+                    System.out.println("error: Invalid input at line " + numLines + ", please check syntax in rules file");
                     System.exit(0);
                 }
+                knowledgeBase.add(line);
             }
         } catch (FileNotFoundException e1) {
-            System.out.println("Unable to find file: " + filename);
+            System.out.println("error: Unable to find file: " + filename);
+            System.exit(0);
+        } catch (NoSuchElementException e) {
+            System.out.println("error: Missing rules in rules file " + filename);
             System.exit(0);
         }
     }
@@ -107,66 +108,72 @@ public class BackwardChaining {
      * @return
      */
     private static boolean backwardChaining() {
-        while (!goals.isEmpty()) {
-            System.out.println();
-            System.out.println("Goals to evaluate: " + goals);
-            // Get the current predicate that is our goal
-            String q = goals.remove(goals.size() - 1);
+        // the list of subgoals to evaluate
+        ArrayList<String> body = new ArrayList<String>();
 
-            System.out.println("Evaluating " + q + "...");
-            // Add the entailment to keep track of processed predicates
-            visited.add(q);
-
-            // If this predicate is not already a proven fact, we process it
-            if (!facts.contains(q)) {
-                ArrayList<String> predicatesToBeProcessed = new ArrayList<String>();
-                // For each clause that contains the predicate as its conclusion
-                // add the symbols to the list of predicates to be processed
-                for (int i = 0; i < clauses.size(); i++) {
-                    String c = clauses.get(i);
-                    if (checkConclusionContains(c, q)) {
-                        String[] predicates = c.split(" ");
-                        System.out.println("Found " + q + " as conclusion in (" + c + ")");
-                        for (int j = 1; j < predicates.length; j++) {
-                            if (!predicatesToBeProcessed.contains(predicates[j])) {
-                                predicatesToBeProcessed.add(predicates[j]);
-                            }
-                        }
-                    }
-                }
-
-                // Since no predicates were found to process, and the query is not a fact,
-                // we cannot prove this query
-                if (predicatesToBeProcessed.size() == 0) {
-                    System.out.println("Unable to prove " + q);
-                    return false;
-                }
-                // There are predicates to process. If they are not already entailed,
-                // add them to the list of goals
-                else {
-                    for (int i = 0; i < predicatesToBeProcessed.size(); i++) {
-                        if (!visited.contains(predicatesToBeProcessed.get(i)) &&
-                                !goals.contains(predicatesToBeProcessed.get(i))) {
-                            goals.add(predicatesToBeProcessed.get(i));
-                        }
-                    }
-                }
-            } else {
-                System.out.println(q + " evaluated to be TRUE");
-            }
-            System.out.println("Visited: " + visited);
+        // If the list of goals is empty, stop recursion
+        if (goals.isEmpty()) {
+            return true;
         }
-        return true;
+
+        // Else, use backward chaining algorithm
+        System.out.println();
+        System.out.println("Goals to evaluate: " + goals);
+        // Get the current predicate that is our goal (subgoal)
+        String subgoal = goals.get(goals.size() - 1);
+
+        System.out.println("Evaluating " + subgoal + "...");
+        // Add the entailment to keep track of processed subgoals
+        visited.add(subgoal);
+
+        // Iterate through each clause in knowledge base and check if its head matches subgoal body
+        // For each clause that contains the body as its head
+        // add the symbols to the list of predicates to be processed
+        for (int i = 0; i < knowledgeBase.size(); i++) {
+            String clause = knowledgeBase.get(i);
+            if (checkHeadContains(clause, subgoal)) {
+                goals.remove(goals.size() - 1);
+                if (!truthTable.contains(clause)) {
+                    truthTable.add(clause);
+                }
+
+                String[] predicates = clause.split(" ");
+                System.out.println("Found " + subgoal + " as conclusion in (" + clause + ")");
+                for (int j = 1; j < predicates.length; j++) {
+                    if (!body.contains(predicates[j])) {
+                        body.add(predicates[j]);
+                    }
+                }
+                System.out.println("Truth table: " + truthTable);
+            }
+
+            // There is a body of predicates to evaluate, so we perform recursive backward
+            // chaining on it
+            if (body.size() != 0) {
+                for (int k = 0; k < body.size(); k++) {
+                    if (!goals.contains(body.get(k)) &&
+                            !truthTable.contains(body.get(k))) {
+                        goals.add(body.get(k));
+                    }
+                }
+
+                // recursion
+                if (backwardChaining()) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     /**
-     * Checks if query appears in the conclusion of a given clause.
+     * Checks if body/query appears in the head/conclusion of a given clause.
      * @param c input clause
-     * @param q query to check if it is contained in the given conclusion
-     * @return true if conclusion contains the query, else false
+     * @param body query to check if it is contained in the given head
+     * @return true if head contains the body, else false
      */
-    private static boolean checkConclusionContains(String c, String q) {
-        String conclusion = c.split(" ")[0];
-        return conclusion.equals(q);
+    private static boolean checkHeadContains(String c, String body) {
+        String head = c.split(" ")[0];
+        return head.equals(body);
     }
 }
