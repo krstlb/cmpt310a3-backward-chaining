@@ -1,0 +1,23 @@
+Filename: src/data2.txt
+
+RULES:
+implication: IF p THEN q
+fact: d is TRUE
+conjunction: IF q AND j THEN g
+implication: IF f THEN e
+conjunction: IF f AND d THEN c
+conjunction: IF d AND g THEN c
+conjunction: IF e AND d THEN c
+implication: IF j THEN b
+conjunction: IF b AND c THEN a
+fact: j is TRUE
+
+BACKWARD CHAINING DIAGNOSTICS:
+First query: p
+
+Goals to evaluate: [p]
+Evaluating p...
+
+RESULT:
+p could not be proven in the knowledge base.
+p is FALSE

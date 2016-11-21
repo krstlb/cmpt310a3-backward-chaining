@@ -26,18 +26,21 @@ public class BackwardChaining {
         System.out.println("First query: " + query);
 
         if (backwardChaining()) {
-            output +=  query + " is TRUE\n";
-            output +=  "\norder of entailment: ";
             // append the entailed symbols in reverse to output
-            for (int i = visited.size() - 1; i >= 0; i--) {
-                output += visited.get(i);
-                if (i != 0) {
-                    output += ", ";
+            for (int i = truthTable.size() - 1; i >= 0; i--) {
+                String[] sentence = truthTable.get(i).split(" ");
+                if (sentence.length == 1) {
+                    output += sentence[0] + " is true\n";
+                } else if (sentence.length == 2) {
+                    output += sentence[1] + " implies " + sentence[0] + "\n";
+                } else if (sentence.length >= 3) {
+                    output += sentence[1] + " and " + sentence[2] + " implies " + sentence[0] + "\n";
                 }
             }
+            output += "Therefore " + query + " is TRUE\n";
         } else {
             output += query + " could not be proven in the knowledge base.\n";
-            output += query + " is FALSE\n";
+            output += "Therefore " + query + " is FALSE\n";
         }
 
         System.out.println();
@@ -120,7 +123,7 @@ public class BackwardChaining {
         System.out.println();
         System.out.println("Goals to evaluate: " + goals);
         // Get the current predicate that is our goal (subgoal)
-        String subgoal = goals.get(goals.size() - 1);
+        String subgoal = goals.remove(goals.size() - 1);
 
         System.out.println("Evaluating " + subgoal + "...");
         // Add the entailment to keep track of processed subgoals
@@ -132,7 +135,6 @@ public class BackwardChaining {
         for (int i = 0; i < knowledgeBase.size(); i++) {
             String clause = knowledgeBase.get(i);
             if (checkHeadContains(clause, subgoal)) {
-                goals.remove(goals.size() - 1);
                 if (!truthTable.contains(clause)) {
                     truthTable.add(clause);
                 }
@@ -152,7 +154,8 @@ public class BackwardChaining {
             if (body.size() != 0) {
                 for (int k = 0; k < body.size(); k++) {
                     if (!goals.contains(body.get(k)) &&
-                            !truthTable.contains(body.get(k))) {
+                            !truthTable.contains(body.get(k)) &&
+                            !visited.contains(body.get(k))) {
                         goals.add(body.get(k));
                     }
                 }

@@ -21,7 +21,7 @@ How to Run
 3. Run the main class.
     java BackwardChaining <filename>
 
-   Some sample data is included, named "data.txt", "data2.txt", and "data3.txt".
+   Some sample data is included, named "data1.txt", "data2.txt", and "data3.txt".
    The file should contain the data to be evaluated. The first line is expected
    to be the query, while the rest of the file are the rules in the knowledge base
    (read line-by-line).
@@ -32,7 +32,7 @@ How to Run
    It will then display the ultimate goal (first query) to prove, which was the first line in the
    file. As the program evaluates each subgoal, the following diagnostics are printed: the list of
    goals, the current goal being evaluated, whether or not the current goal has been found as a
-   conclusion within a clause in the KB, and goals visited so far.
+   conclusion/head within a clause/body in the KB, and goals visited so far.
 
    Finally, if the result of proving the ultimate goal is successful, it will print TRUE and the
-   order of symbols entailed. If the result is unsuccessful, it will print FALSE.
+   order of entailments to reach the query. If the result is unsuccessful, it will print FALSE.
