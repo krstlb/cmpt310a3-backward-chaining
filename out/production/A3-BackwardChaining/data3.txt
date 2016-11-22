@@ -1,7 +1,0 @@
-q
-a
-b
-q p
-p l m
-l b a
-m b l

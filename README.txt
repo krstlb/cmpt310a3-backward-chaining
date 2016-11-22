@@ -13,7 +13,7 @@ How to Run
    Please compile this program with Java 1.8.
 
 1. In command prompt, navigate to folder containing source files.
-    cd A3-BackwardChaining\src
+    cd code
 
 2. Compile all .java files.
     javac *.
